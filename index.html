@@ -25,6 +25,7 @@
     }
     *{box-sizing:border-box}
     html,body{height:100%}
+    html{ scroll-behavior:smooth; } /* fallback smooth scroll */
     body{
       margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       color:var(--text); background:
@@ -42,6 +43,15 @@
     header{ position:sticky; top:0; z-index:20; backdrop-filter:saturate(140%) blur(10px);
       background:linear-gradient(180deg, rgba(11,15,23,.75), rgba(11,15,23,.35));
       border-bottom:1px solid rgba(255,255,255,.06);
+      transition: background .5s ease;
+    }
+    header.pulse{
+      animation: headerPulse 900ms ease;
+    }
+    @keyframes headerPulse{
+      0% { background:linear-gradient(180deg, rgba(18,26,45,.85), rgba(11,15,23,.35)); }
+      50%{ background:linear-gradient(180deg, rgba(24,38,70,.95), rgba(11,15,23,.45)); }
+      100%{ background:linear-gradient(180deg, rgba(11,15,23,.75), rgba(11,15,23,.35)); }
     }
     .nav{ max-width:1100px; margin:0 auto; display:flex; gap:14px; align-items:center; padding:14px 18px; }
     .brand{ font-weight:800; letter-spacing:.3px; }
@@ -71,8 +81,9 @@
       background:linear-gradient(180deg, var(--panel), var(--panel-2));
       box-shadow: var(--shadow); outline:1px solid rgba(255,255,255,.06);
       transform: translateY(6px); animation: floatIn .8s .05s both cubic-bezier(.2,.8,.2,1);
+      aspect-ratio: 16/9;
     }
-    .hero-figure img{ width:100%; height:100%; display:block; object-fit:cover; aspect-ratio: 16/9; }
+    .hero-figure img{ width:100%; height:100%; display:block; object-fit:cover; }
     .shine{ position:absolute; inset:0; background:linear-gradient(120deg, transparent 40%, rgba(255,255,255,.28) 50%, transparent 60%); transform:translateX(-100%); transition:transform .9s ease; }
     .hero-figure:hover .shine{ transform:translateX(120%); }
 
@@ -84,30 +95,66 @@
     }
 
     /* Sections */
-    section{ margin:40px 0 0; padding:26px 20px; border:1px solid rgba(255,255,255,.06);
+    section{
+      margin:40px 0 0; padding:26px 20px; border:1px solid rgba(255,255,255,.06);
       border-radius:var(--radius); background:linear-gradient(180deg, var(--panel), var(--panel-2)); box-shadow: var(--shadow);
       animation: floatIn .8s both cubic-bezier(.2,.8,.2,1);
+      scroll-margin-top: 90px; /* avoid being hidden under sticky header on jump */
     }
     section:nth-of-type(1){ animation-delay:.05s } section:nth-of-type(2){ animation-delay:.1s }
     section:nth-of-type(3){ animation-delay:.15s } section:nth-of-type(4){ animation-delay:.2s }
     section:nth-of-type(5){ animation-delay:.25s } section:nth-of-type(6){ animation-delay:.3s }
     @keyframes floatIn{ from{opacity:0; transform: translateY(10px)} to{opacity:1; transform:none} }
 
-    h2{
-      margin:0 0 10px; font-size: clamp(20px, 3.2vw, 28px); line-height:1.2; letter-spacing:.2px;
+    /* Destination flash highlight after jump */
+    section.flash{
+      box-shadow: 0 0 0 3px rgba(94,234,212,.35), var(--shadow);
+      animation: sectionFlash 1100ms ease;
     }
+    @keyframes sectionFlash{
+      0%{ box-shadow: 0 0 0 12px rgba(94,234,212,.0), var(--shadow); }
+      30%{ box-shadow: 0 0 0 6px rgba(94,234,212,.45), var(--shadow); }
+      100%{ box-shadow: 0 0 0 3px rgba(94,234,212,.0), var(--shadow); }
+    }
+
+    h2{ margin:0 0 10px; font-size: clamp(20px, 3.2vw, 28px); line-height:1.2; letter-spacing:.2px; }
     .sub{ margin:0 0 16px; color:var(--muted); font-size:14px; }
     p{ margin:8px 0 10px; line-height:1.75; color:var(--text); }
     a[target="_blank"]{ color:#9fd7ff; text-underline-offset:3px }
     hr.sep{ border:0; border-top:1px solid var(--line); margin:18px 0 }
 
-    /* Cards / images */
+    /* Figures / images — uniform card sizes + zoom hint */
     figure{ margin:16px 0; }
     .img-card{
+      position:relative;
       overflow:hidden; border-radius:12px; border:1px solid rgba(255,255,255,.08);
       background:#0e1424;
+      /* Make all figures the same height by default */
+      aspect-ratio: 16 / 9;
     }
-    .img-card img{ display:block; width:100%; height:auto; }
+    .img-card img{
+      display:block; width:100%; height:100%;
+      object-fit: cover; /* gentle crop for consistency */
+      transition: transform .6s ease;
+      cursor: zoom-in;
+    }
+    .img-card:hover img{ transform: scale(1.03); }
+    .img-card::after{
+      content:"Click to zoom";
+      position:absolute; right:10px; bottom:10px;
+      font-size:12px; font-weight:700; letter-spacing:.3px; color:#0d1324;
+      padding:6px 10px; border-radius:999px;
+      background:linear-gradient(90deg, var(--accent), var(--accent-2));
+      opacity:.0; transform: translateY(6px);
+      transition: .25s ease;
+      pointer-events:none;
+    }
+    .img-card:hover::after{ opacity:.9; transform:none; }
+
+    /* Optional: show full image (no cropping) by adding .no-crop to figure */
+    .img-card.no-crop{ aspect-ratio:auto; }
+    .img-card.no-crop img{ object-fit: contain; height:auto; }
+
     figcaption{ font-size:13px; color:var(--muted); padding:10px 6px 0 }
 
     /* Grid helpers */
@@ -135,22 +182,53 @@
     /* Scroll reveal */
     .reveal{ opacity:0; transform: translateY(10px); transition: .6s ease; }
     .reveal.show{ opacity:1; transform:none; }
+
+    /* Lightbox */
+    .lightbox{
+      position:fixed; inset:0; z-index:1000;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(7,10,18,.78);
+      backdrop-filter: blur(4px);
+      padding: 24px;
+      opacity:0; pointer-events:none;
+      transition: opacity .25s ease;
+    }
+    .lightbox.show{ opacity:1; pointer-events:auto; }
+    .lightbox-inner{ max-width: min(92vw, 1400px); max-height: 86vh; display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .lightbox-img{
+      max-width: 100%; max-height: 86vh; border-radius:14px;
+      box-shadow: 0 25px 80px rgba(0,0,0,.6); outline:1px solid rgba(255,255,255,.1);
+    }
+    .lightbox-caption{ color:var(--muted); font-size:13px; text-align:center; }
+    .lb-close, .lb-prev, .lb-next{
+      position:fixed; top:50%; transform: translateY(-50%);
+      background: rgba(255,255,255,.08); color:var(--text);
+      border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:10px 12px;
+      cursor:pointer; font-weight:800;
+    }
+    .lb-close{ top:24px; right:24px; transform:none; }
+    .lb-prev{ left:20px; }
+    .lb-next{ right:20px; }
+    .lb-close:hover, .lb-prev:hover, .lb-next:hover{ background:rgba(255,255,255,.16); }
+    @media (max-width: 800px){
+      .lb-prev, .lb-next{ display:none; }
+    }
   </style>
 </head>
 <body>
   <div class="noise" aria-hidden="true"></div>
 
   <!-- Sticky Nav -->
-  <header>
+  <header id="site-header">
     <nav class="nav">
       <div class="brand"><em>Club World Cup</em> — ML Project</div>
       <div class="spacer"></div>
-      <a href="#intro">Intro</a>
-      <a href="#background">Background</a>
-      <a href="#methods">Methods</a>
-      <a href="#analysis">Analysis</a>
-      <a href="#results">Results</a>
-      <a href="#conclusion">Conclusion</a>
+      <a class="navlink" href="#intro">Intro</a>
+      <a class="navlink" href="#background">Background</a>
+      <a class="navlink" href="#methods">Methods</a>
+      <a class="navlink" href="#analysis">Analysis</a>
+      <a class="navlink" href="#results">Results</a>
+      <a class="navlink" href="#conclusion">Conclusion</a>
     </nav>
   </header>
 
@@ -160,7 +238,7 @@
       <div>
         <h1>Predicting the FIFA Club World Cup</h1>
         <p class="lead">
-          I trained gradient-boosting models on 228,000+ historical matches and simulated the Club World Cup 10,000 times to estimate each team’s chances. My best model (XGBoost) produced rankings close to the professional Opta Supercomputer—using only free data and one home PC—and I built a small demo showing how this could power live predictions and AI commentary. :contentReference[oaicite:1]{index=1}
+          I trained gradient-boosting models on 228,000+ historical matches and simulated the Club World Cup 10,000 times to estimate each team’s chances. My best model (XGBoost) produced rankings close to the professional Opta Supercomputer—using only free data and one home PC—and I built a small demo showing how this could power live predictions and AI commentary.
         </p>
         <div class="chips">
           <span class="chip">XGBoost / LightGBM / CatBoost</span>
@@ -178,29 +256,29 @@
     <!-- Intro -->
     <section id="intro" class="reveal">
       <h2>Research Question</h2>
-      <p><strong>Can machine learning models accurately predict the winner of the FIFA Club World Cup using past match data, and can these models support live predictions and AI commentary?</strong> :contentReference[oaicite:2]{index=2}</p>
+      <p><strong>Can machine learning models accurately predict the winner of the FIFA Club World Cup using past match data, and can these models support live predictions and AI commentary?</strong></p>
       <hr class="sep">
       <h2>Introduction</h2>
       <p>
-        Football is notoriously hard to predict: few goals, high variance, and many hidden factors. Professional systems like Opta process huge volumes of real-time data with multiple models and supercomputers. I set out to build a useful alternative with public data and consumer hardware, then benchmark it against Opta. :contentReference[oaicite:3]{index=3}
+        Football is notoriously hard to predict: few goals, high variance, and many hidden factors. Professional systems like Opta process huge volumes of real-time data with multiple models and supercomputers. I set out to build a useful alternative with public data and consumer hardware, then benchmark it against Opta.
       </p>
 
       <div class="grid cols-3">
         <div><h3>Key Terms</h3>
           <ul>
-            <li><strong>xG</strong>: likelihood a shot becomes a goal (position/type/assist). :contentReference[oaicite:4]{index=4}</li>
-            <li><strong>Elo Rating</strong>: rating based on results & opponent strength. :contentReference[oaicite:5]{index=5}</li>
-            <li><strong>SHAP</strong>: explains feature contribution to a prediction. :contentReference[oaicite:6]{index=6}</li>
-            <li><strong>Spearman correlation</strong>: how well predicted ranks match actual (1 = perfect). :contentReference[oaicite:7]{index=7}</li>
+            <li><strong>xG</strong>: likelihood a shot becomes a goal (position/type/assist).</li>
+            <li><strong>Elo Rating</strong>: rating based on results & opponent strength.</li>
+            <li><strong>SHAP</strong>: explains feature contribution to a prediction.</li>
+            <li><strong>Spearman correlation</strong>: how well predicted ranks match actual (1 = perfect).</li>
           </ul>
         </div>
         <div><h3>Aims</h3>
-          <p>Predict the tournament winner using ML and compare to a random baseline and a professional model. Build a small web demo to illustrate real-time potential. :contentReference[oaicite:8]{index=8}</p>
+          <p>Predict the tournament winner using ML and compare to a random baseline and a professional model. Build a small web demo to illustrate real-time potential.</p>
         </div>
         <div><h3>Hypotheses</h3>
           <ul>
-            <li>XGBoost Spearman rank correlation between <strong>0.45–0.65</strong>. :contentReference[oaicite:9]{index=9}</li>
-            <li>Feasible pipeline for <strong>real-time AI commentary</strong> (simulated). :contentReference[oaicite:10]{index=10}</li>
+            <li>XGBoost Spearman rank correlation between <strong>0.45–0.65</strong>.</li>
+            <li>Feasible pipeline for <strong>real-time AI commentary</strong> (simulated).</li>
           </ul>
         </div>
       </div>
@@ -209,14 +287,14 @@
     <!-- Background -->
     <section id="background" class="reveal">
       <h2>Background</h2>
-      <p><strong>Why football is hard:</strong> low-scoring, randomness, injuries, travel, refereeing, and luck; even elite models get ~60–70% match accuracy. :contentReference[oaicite:11]{index=11}</p>
-      <p><strong>How the pros do it:</strong> Opta uses petabytes of data, 8 AI models, and millions of simulations; their Club World Cup probabilities provide a benchmark. :contentReference[oaicite:12]{index=12}</p>
-      <p><strong>Tournament format:</strong> 32 teams → group stage (8×4; top-2 advance) → knockouts (R16 → QF → SF → Final; ET & penalties if needed). :contentReference[oaicite:13]{index=13}</p>
+      <p><strong>Why football is hard:</strong> low-scoring, randomness, injuries, travel, refereeing, and luck; even elite models get ~60–70% match accuracy.</p>
+      <p><strong>How the pros do it:</strong> Opta uses petabytes of data, 8 AI models, and millions of simulations; their Club World Cup probabilities provide a benchmark.</p>
+      <p><strong>Tournament format:</strong> 32 teams → group stage (8×4; top-2 advance) → knockouts (R16 → QF → SF → Final; ET & penalties if needed).</p>
       <details>
         <summary>See tournament diagram</summary>
         <figure class="img-card">
           <img src="format_diagram.png" alt="Club World Cup format diagram" />
-          <figcaption>Group and knockout structure used for simulations. :contentReference[oaicite:14]{index=14}</figcaption>
+          <figcaption>Group and knockout structure used for simulations.</figcaption>
         </figure>
       </details>
     </section>
@@ -247,14 +325,14 @@
           </table>
         </div>
       </div>
-      <p class="sub">All definitions and tables follow your report. :contentReference[oaicite:15]{index=15}</p>
+      <p class="sub">All definitions and tables follow the report.</p>
     </section>
 
     <!-- Methods -->
     <section id="methods" class="reveal">
       <h2>Methods</h2>
       <h3>Data Collection</h3>
-      <p>Aggregated public datasets covering domestic and continental competitions, shot-based xG, injuries, and match metadata (2000–2025). Steps: load & normalize names, merge by match/date, remove outcome columns, assemble 228k+ matches of pre-match features. :contentReference[oaicite:16]{index=16}</p>
+      <p>Aggregated public datasets covering domestic and continental competitions, shot-based xG, injuries, and match metadata (2000–2025). Steps: load & normalize names, merge by match/date, remove outcome columns, assemble 228k+ matches of pre-match features.</p>
       <ul>
         <li>Club Match Data (42 leagues): <a href="https://github.com/xgabora/Club-Football-Match-Data-2000-2025" target="_blank" rel="noopener">GitHub</a> / <a href="https://www.kaggle.com/datasets/adamgbor/club-football-match-data-2000-2025" target="_blank" rel="noopener">Kaggle</a></li>
         <li>Understat shots/xG (scraped): <a href="https://github.com/douglasbc/scraping-understat-dataset" target="_blank" rel="noopener">GitHub</a></li>
@@ -264,19 +342,19 @@
       </ul>
       <figure class="img-card">
         <img src="data_pipeline.png" alt="Data aggregation and cleaning pipeline" />
-        <figcaption>Data pipeline: load → normalize → merge → de-leak → features. :contentReference[oaicite:17]{index=17}</figcaption>
+        <figcaption>Data pipeline: load → normalize → merge → de-leak → features.</figcaption>
       </figure>
 
       <h3>Model Training</h3>
-      <p>Compared <strong>XGBoost</strong>, <strong>LightGBM</strong>, and <strong>CatBoost</strong> (PyCaret for quick baselines, MCC selection). Generated feature importance and SHAP explanations to interpret drivers. :contentReference[oaicite:18]{index=18}</p>
+      <p>Compared <strong>XGBoost</strong>, <strong>LightGBM</strong>, and <strong>CatBoost</strong> (PyCaret for quick baselines, MCC selection). Generated feature importance and SHAP explanations to interpret drivers.</p>
       <div class="grid cols-2">
         <figure class="img-card">
           <img src="feature_importance.png" alt="Feature importance bar chart" />
-          <figcaption>Feature importance highlights. :contentReference[oaicite:19]{index=19}</figcaption>
+          <figcaption>Feature importance highlights.</figcaption>
         </figure>
         <figure class="img-card">
           <img src="shap_summary.png" alt="SHAP summary plot" />
-          <figcaption>SHAP summary: feature effects distribution. :contentReference[oaicite:20]{index=20}</figcaption>
+          <figcaption>SHAP summary: feature effects distribution.</figcaption>
         </figure>
       </div>
 
@@ -285,24 +363,24 @@
         <li>Generate pre-match data for each CWC game.</li>
         <li>Predict each match with the trained model.</li>
         <li>Advance winners through groups → knockouts.</li>
-        <li>Repeat for <strong>10,000</strong> tournaments; compute team win %. :contentReference[oaicite:21]{index=21}</li>
+        <li>Repeat for <strong>10,000</strong> tournaments; compute team win %.</li>
       </ol>
 
       <details>
         <summary>Random Baseline (expected ~3.125% per team)</summary>
-        <p>Purely random outcomes in groups (win/draw/loss = 1/3) and 50/50 in knockouts; same structure as the real event; 10,000 reps to form the baseline distribution. :contentReference[oaicite:22]{index=22}</p>
+        <p>Purely random outcomes in groups (win/draw/loss = 1/3) and 50/50 in knockouts; same structure as the real event; 10,000 reps to form the baseline distribution.</p>
         <figure class="img-card">
           <img src="random_baseline_code.png" alt="Random baseline code screenshot" />
-          <figcaption>Random baseline simulation script (summary). :contentReference[oaicite:23]{index=23}</figcaption>
+          <figcaption>Random baseline simulation script (summary).</figcaption>
         </figure>
       </details>
 
       <details>
         <summary>Professional Benchmark (Opta)</summary>
-        <p>Used Opta Supercomputer’s CWC win probabilities as the professional benchmark, then simulated 10,000 tournaments from those probabilities to compare distributions and ranks. :contentReference[oaicite:24]{index=24}</p>
+        <p>Used Opta Supercomputer’s CWC win probabilities as the professional benchmark, then simulated 10,000 tournaments from those probabilities to compare distributions and ranks.</p>
         <figure class="img-card">
           <img src="opta_table.png" alt="Opta-based win probability table" />
-          <figcaption>Opta-derived ranking table used for comparison. :contentReference[oaicite:25]{index=25}</figcaption>
+          <figcaption>Opta-derived ranking table used for comparison.</figcaption>
         </figure>
       </details>
     </section>
@@ -311,78 +389,71 @@
     <section id="analysis" class="reveal">
       <h2>Data Analysis & Evaluation</h2>
       <p>
-        I compared three systems—my XGBoost model, Opta, and a random baseline—using four views: side-by-side ranks, Spearman correlation, mean absolute rank error (MARE), and the predicted win probability assigned to the real winner (Chelsea). :contentReference[oaicite:26]{index=26}
+        I compared three systems—my XGBoost model, Opta, and a random baseline—using four views: side-by-side ranks, Spearman correlation, mean absolute rank error (MARE), and the predicted win probability assigned to the real winner (Chelsea).
       </p>
 
       <div class="grid cols-2">
         <figure class="img-card">
           <img src="rank_comparison.png" alt="Rank comparison chart" />
-          <figcaption>Team rank comparison vs. actual. :contentReference[oaicite:27]{index=27}</figcaption>
+          <figcaption>Team rank comparison vs. actual.</figcaption>
         </figure>
         <figure class="img-card">
           <img src="rank_comparison_no_random.png" alt="Rank comparison without random baseline" />
-          <figcaption>Same chart without the random baseline for clarity. :contentReference[oaicite:28]{index=28}</figcaption>
+          <figcaption>Same chart without the random baseline for clarity.</figcaption>
         </figure>
       </div>
 
       <div class="grid cols-3">
         <figure class="img-card">
           <img src="spearman_bar.png" alt="Spearman correlation bar chart" />
-          <figcaption>Spearman: XGBoost <strong>0.647</strong>, Opta 0.691, Random −0.323. :contentReference[oaicite:29]{index=29}</figcaption>
+          <figcaption>Spearman: XGBoost <strong>0.647</strong>, Opta 0.691, Random −0.323.</figcaption>
         </figure>
         <figure class="img-card">
           <img src="mare_bar.png" alt="Mean absolute rank error chart" />
-          <figcaption>MARE: XGBoost 6.56, Opta 5.28, Random 12.31. :contentReference[oaicite:30]{index=30}</figcaption>
+          <figcaption>MARE: XGBoost 6.56, Opta 5.28, Random 12.31.</figcaption>
         </figure>
         <figure class="img-card">
           <img src="winner_probability.png" alt="Win probability for Chelsea across models" />
-          <figcaption>Win % for actual winner (Chelsea): Random 3.19%, XGBoost 6.04%, Opta 8.40%. :contentReference[oaicite:31]{index=31}</figcaption>
+          <figcaption>Win % for actual winner (Chelsea): Random 3.19%, XGBoost 6.04%, Opta 8.40%.</figcaption>
         </figure>
       </div>
 
       <details>
         <summary>Model notes & data leakage fix</summary>
-        <p>Early runs showed 99–100% “accuracy”, revealing leakage from post-match stats. After removing them, results normalized and became realistic. :contentReference[oaicite:32]{index=32}</p>
+        <p>Early runs showed 99–100% “accuracy”, revealing leakage from post-match stats. After removing them, results normalized and became realistic.</p>
       </details>
-
-      <h3>Limitations & Ideas</h3>
-      <ul>
-        <li>Mid-table teams are hardest; small quality gaps + randomness. :contentReference[oaicite:33]{index=33}</li>
-        <li>Injury/lineup/travel data incomplete in public sources. :contentReference[oaicite:34]{index=34}</li>
-        <li>Improvements: time-split training (train ≤2023, test 2024–25), more simulations (e.g., 50k), uncertainty bars, test more model families / ensembles. :contentReference[oaicite:35]{index=35}</li>
-      </ul>
     </section>
 
     <!-- Results / My Model -->
     <section id="results" class="reveal">
       <h2>My Model Results</h2>
       <p>
-        XGBoost was the best performer for this structured dataset. I simulated ~630,000 matches (63 per tournament × 10,000 tournaments), which took ~19h30m on a single home PC (RTX 3080 Ti). Final ranking correlation with actual results: <strong>Spearman 0.647</strong>—far above random (−0.323) and close to Opta (0.691). :contentReference[oaicite:36]{index=36}
+        XGBoost was the best performer for this structured dataset. I simulated ~630,000 matches (63 per tournament × 10,000 tournaments), which took ~19h30m on a single home PC (RTX 3080 Ti). Final ranking correlation with actual results: <strong>Spearman 0.647</strong>—far above random (−0.323) and close to Opta (0.691).
       </p>
       <div class="grid cols-2">
         <figure class="img-card">
           <img src="my_model_table.png" alt="My model win% table (top teams)" />
-          <figcaption>Example win % table across 10,000 simulations. :contentReference[oaicite:37]{index=37}</figcaption>
+          <figcaption>Example win % table across 10,000 simulations.</figcaption>
         </figure>
         <figure class="img-card">
           <img src="runtime_hardware.png" alt="Runtime and hardware panel" />
-          <figcaption>Runtime & hardware notes (single-machine pipeline). :contentReference[oaicite:38]{index=38}</figcaption>
+          <figcaption>Runtime & hardware notes (single-machine pipeline).</figcaption>
         </figure>
       </div>
 
       <h3>Resource Comparison</h3>
       <p>
-        Opta (Stats Perform) uses ~7.2 PB of sports data, 8 AI models across >200 programs, supercomputers, and a large team; my project used public data and one GPU. Estimated annual electricity: <strong>~NZD 920</strong> for my GPU vs. <strong>~NZD 13.14M</strong> for a supercomputer-scale setup—illustrating the resource gap while showing what’s possible with accessible tools. :contentReference[oaicite:39]{index=39}
+        Opta (Stats Perform) uses ~7.2 PB of sports data, 8 AI models across >200 programs, supercomputers, and a large team; my project used public data and one GPU. Estimated annual electricity: <strong>~NZD 920</strong> for my GPU vs. <strong>~NZD 13.14M</strong> for a supercomputer-scale setup—illustrating the resource gap while showing what’s possible with accessible tools.
       </p>
       <figure class="img-card">
         <img src="resource_compare.png" alt="Resource comparison infographic" />
-        <figcaption>Resources: professional vs. single-PC project. :contentReference[oaicite:40]{index=40}</figcaption>
+        <figcaption>Resources: professional vs. single-PC project.</figcaption>
       </figure>
 
       <h3>Live Demo</h3>
       <p>
         I built a simple demo to preview real-time usage: choose a match, generate realistic stats, predict a winner, and display commentary. Try it here:
-        <a href="https://simulationshowcase.streamlit.app" target="_blank" rel="noopener">simulationshowcase.streamlit.app</a>. :contentReference[oaicite:41]{index=41}
+        <a href="https://simulationshowcase.streamlit.app" target="_blank" rel="noopener">simulationshowcase.streamlit.app</a>.
       </p>
     </section>
 
@@ -390,10 +461,10 @@
     <section id="conclusion" class="reveal">
       <h2>Conclusion</h2>
       <p>
-        The model landed at the top of my expected range (Spearman <strong>0.647</strong>), cut mean rank error by ~47% vs. random, and assigned a realistic win chance to the eventual champion (Chelsea). The pipeline can power a basic live-prediction demo today and could approach professional performance with richer player-level and situational data. :contentReference[oaicite:42]{index=42}
+        The model landed at the top of my expected range (Spearman <strong>0.647</strong>), cut mean rank error by ~47% vs. random, and assigned a realistic win chance to the eventual champion (Chelsea). The pipeline can power a basic live-prediction demo today and could approach professional performance with richer player-level and situational data.
       </p>
       <p class="sub">
-        All text, numbers, and structure summarize your “2025 SCIENCE FAIR finished.pdf” report. :contentReference[oaicite:43]{index=43}
+        All text, numbers, and structure summarize my “2025 SCIENCE FAIR” report.
       </p>
     </section>
 
@@ -402,15 +473,104 @@
     </footer>
   </main>
 
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lb-close" id="lbClose" aria-label="Close">✕</button>
+    <button class="lb-prev" id="lbPrev" aria-label="Previous">‹</button>
+    <div class="lightbox-inner">
+      <img class="lightbox-img" id="lbImg" alt="">
+      <div class="lightbox-caption" id="lbCap"></div>
+    </div>
+    <button class="lb-next" id="lbNext" aria-label="Next">›</button>
+  </div>
+
   <script>
     // Current year
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Simple reveal on scroll
+    // Reveal on scroll
     const obs = new IntersectionObserver((entries)=>{
       entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('show'); obs.unobserve(e.target);} });
     },{threshold:.08});
     document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+    // Smooth anchor scroll + header pulse + destination flash
+    const header = document.getElementById('site-header');
+    document.querySelectorAll('a.navlink[href^="#"]').forEach(link=>{
+      link.addEventListener('click', (e)=>{
+        const id = link.getAttribute('href').slice(1);
+        const target = document.getElementById(id);
+        if(!target) return;
+        e.preventDefault();
+
+        // pulse header background
+        header.classList.remove('pulse');
+        void header.offsetWidth; // reflow to restart animation
+        header.classList.add('pulse');
+
+        // smooth scroll (account for sticky header via scroll-margin-top in CSS)
+        target.scrollIntoView({behavior:'smooth', block:'start'});
+
+        // flash highlight after a short delay
+        setTimeout(()=>{
+          target.classList.add('flash');
+          setTimeout(()=>target.classList.remove('flash'), 1100);
+        }, 400);
+      });
+    });
+
+    // Lightbox for images in figures (click to zoom)
+    const zoomables = Array.from(document.querySelectorAll('figure.img-card img'));
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lbImg');
+    const lbCap = document.getElementById('lbCap');
+    const lbClose = document.getElementById('lbClose');
+    const lbPrev = document.getElementById('lbPrev');
+    const lbNext = document.getElementById('lbNext');
+    let idx = -1;
+
+    function openLB(i){
+      idx = i;
+      const img = zoomables[idx];
+      lbImg.src = img.currentSrc || img.src;
+      lbImg.alt = img.alt || '';
+      const capEl = img.closest('figure').querySelector('figcaption');
+      lbCap.textContent = capEl ? capEl.innerText : '';
+      lb.classList.add('show');
+      lb.setAttribute('aria-hidden','false');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLB(){
+      lb.classList.remove('show');
+      lb.setAttribute('aria-hidden','true');
+      document.body.style.overflow = '';
+      lbImg.src = '';
+    }
+    function nextLB(step){
+      if(idx < 0) return;
+      idx = (idx + step + zoomables.length) % zoomables.length;
+      openLB(idx);
+    }
+
+    zoomables.forEach((img,i)=>{
+      img.addEventListener('click', ()=> openLB(i));
+      img.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') openLB(i); });
+      img.setAttribute('tabindex','0'); // keyboard accessible
+      img.setAttribute('role','button');
+      img.setAttribute('aria-label','Open image in lightbox');
+    });
+
+    lbClose.addEventListener('click', closeLB);
+    lb.addEventListener('click', (e)=>{ if(e.target === lb) closeLB(); }); // click backdrop
+    lbPrev.addEventListener('click', ()=> nextLB(-1));
+    lbNext.addEventListener('click', ()=> nextLB(1));
+
+    window.addEventListener('keydown', (e)=>{
+      if(!lb.classList.contains('show')) return;
+      if(e.key === 'Escape') closeLB();
+      if(e.key === 'ArrowLeft') nextLB(-1);
+      if(e.key === 'ArrowRight') nextLB(1);
+    });
   </script>
 </body>
 </html>
